@@ -7,23 +7,29 @@ function LoginForm({ onLogin }) {
   const [errors, setErrors] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
+    setErrors([]);
     setIsLoading(true);
-    fetch("/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, password }),
-    }).then((r) => {
-      setIsLoading(false);
-      if (r.ok) {
-        r.json().then((user) => onLogin(user));
+    try {
+      const response = await fetch("/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        onLogin(data);
       } else {
-        r.json().then((err) => setErrors(err.errors));
+        setErrors(data.errors || ["Login failed. Please try again."]);
       }
-    });
+    } catch {
+      setErrors(["Could not connect to the API. Make sure the Flask server is running."]);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (

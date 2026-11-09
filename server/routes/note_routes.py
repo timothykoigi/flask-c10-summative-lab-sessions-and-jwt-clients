@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, session
 
-from models import Note, db
+from server.models.models import Note, db
 
 note_routes = Blueprint("note_routes", __name__)
 
@@ -57,9 +57,12 @@ def create_note():
     if user_id is None:
         return jsonify({"errors": ["Authentication required"]}), 401
 
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True) 
+    if not isinstance(data, dict): 
+        return jsonify({"errors": ["Request body must be a JSON object"]}), 400
     title = (data.get("title") or "").strip()
-    content = data.get("content") or ""
+    title = str(title) if title is not None else "" 
+    content = data.get("content", "")
 
     if not title:
         return jsonify({"errors": ["Title is required"]}), 400
@@ -94,7 +97,9 @@ def update_note(note_id):
     if note is None:
         return jsonify({"errors": ["Note not found"]}), 404
 
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True) 
+    if not isinstance(data, dict): 
+        return jsonify({"errors": ["Request body must be a JSON object"]}), 400
     title = data.get("title")
     content = data.get("content")
 

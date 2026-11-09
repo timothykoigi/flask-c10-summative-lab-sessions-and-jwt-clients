@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Error, Input, FormField, Label, Textarea } from "../styles";
+import { Button, Error, Input, FormField, Label } from "../styles";
 
 function SignUpForm({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -8,28 +8,33 @@ function SignUpForm({ onLogin }) {
   const [errors, setErrors] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setErrors([]);
     setIsLoading(true);
-    fetch("/signup", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username,
-        password,
-        password_confirmation: passwordConfirmation
-      }),
-    }).then((r) => {
-      setIsLoading(false);
-      if (r.ok) {
-        r.json().then(({token, user}) => onLogin(token, user));
+    try {
+      const response = await fetch("/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          password,
+          password_confirmation: passwordConfirmation,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        onLogin(data.token, data.user);
       } else {
-        r.json().then((err) => setErrors(err.errors));
+        setErrors(data.errors || ["Sign up failed. Please try again."]);
       }
-    });
+    } catch {
+      setErrors(["Could not connect to the API. Make sure the Flask server is running."]);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -55,13 +60,13 @@ function SignUpForm({ onLogin }) {
         />
       </FormField>
       <FormField>
-        <Label htmlFor="password">Password Confirmation</Label>
+        <Label htmlFor="password_confirmation">Password Confirmation</Label>
         <Input
           type="password"
           id="password_confirmation"
           value={passwordConfirmation}
           onChange={(e) => setPasswordConfirmation(e.target.value)}
-          autoComplete="current-password"
+          autoComplete="new-password"
         />
       </FormField>
       <FormField>
